@@ -13,6 +13,7 @@ import httpx
 from fastapi import FastAPI,Request,Response,HTTPException,WebSocket
 from fastapi.responses import FileResponse,StreamingResponse,JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel,Field,ConfigDict
 from .config import ROOT,settings
 from .providers.openai_provider import OpenAIRouterProvider
@@ -30,10 +31,12 @@ from . import accounts,tutorials
 catalog=Catalog(ROOT/settings.catalog_path)
 store=SessionStore(settings.ttl); rates=RateLimiter(); samples=deque(maxlen=500)
 http=None;engine=None;providers={}
+auth_slots=None;route_slots=None;audio_slots=None
 
 @asynccontextmanager
 async def lifespan(app):
-    global http,engine,providers
+    global http,engine,providers,auth_slots,route_slots,audio_slots
+    auth_slots=asyncio.Semaphore(2);route_slots=asyncio.Semaphore(8);audio_slots=asyncio.Semaphore(4)
     accounts.initialize()
     http=httpx.AsyncClient(timeout=settings.timeout,limits=httpx.Limits(max_connections=30,max_keepalive_connections=15))
     providers={'openai':OpenAIRouterProvider(http,settings.openai_key,settings.openai_model,'https://api.openai.com/v1',settings.timeout)}
@@ -46,8 +49,13 @@ async def lifespan(app):
     yield
     task.cancel();await asyncio.gather(task,return_exceptions=True);await http.aclose()
 
-app=FastAPI(title='Voice Router — HackAlem',lifespan=lifespan,docs_url=None,redoc_url=None)
+app=FastAPI(title='Voice Router — HackAlem',lifespan=lifespan,docs_url=None,redoc_url=None,openapi_url=None)
 app.add_middleware(SecurityMiddleware,settings=settings)
+
+@app.exception_handler(RequestValidationError)
+async def validation_error(request,exc):
+    # Never echo submitted passwords or request bodies in validation errors.
+    return JSONResponse({'detail':'Проверьте поля запроса.'},status_code=422)
 
 def session(request,csrf=True):
     u=current_user(request)
@@ -62,6 +70,7 @@ def current_user(request):
     return u
 
 class Credentials(BaseModel):
+    model_config=ConfigDict(extra='forbid')
     email:str=Field(min_length=3,max_length=254)
     password:str=Field(min_length=10,max_length=128)
 
@@ -72,7 +81,10 @@ async def authenticate(action:str,body:Credentials,request:Request,response:Resp
     if not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+',email):raise HTTPException(422,'Проверьте адрес email.')
     retry=rates.check(('auth',request.client.host),8)
     if retry:raise HTTPException(429,'Подождите минуту перед следующей попыткой.')
-    u=await asyncio.to_thread(accounts.register if action=='register' else accounts.login,email,body.password)
+    if not accounts.allow_auth(email,request.client.host):raise HTTPException(429,'Слишком много попыток. Повторите через 15 минут.')
+    if auth_slots.locked():raise HTTPException(429,'Вход занят. Попробуйте через несколько секунд.')
+    async with auth_slots:
+        u=await asyncio.to_thread(accounts.register if action=='register' else accounts.login,email,body.password)
     if not u:raise HTTPException(400,'Не удалось войти или создать аккаунт. Проверьте данные.')
     old=store.get(request.cookies.get('vr_session'))
     if old:store.delete(old.session_id)
@@ -95,13 +107,20 @@ async def saved_history(request:Request):return {'messages':accounts.history(cur
 
 @app.delete('/api/history')
 async def erase_history(request:Request):
-    s=session(request);accounts.clear(s.user_id)
+    s=session(request)
+    if any(state.user_id==s.user_id and state.lock.locked() for state in store.sessions.values()):
+        raise HTTPException(409,'Дождитесь окончания ответа перед удалением истории.')
+    accounts.clear(s.user_id)
     for state in store.sessions.values():
-        if state.user_id==s.user_id:state.conversation_history=[]
+        if state.user_id==s.user_id:
+            state.conversation_history=[];state.results.clear();state.audio_responses.clear()
+            state.collected_slots.clear();state.awaiting_confirmation=None;state.awaiting_slot=None
+            state.active_scenario=None;state.pending_topics.clear();state.previous_scenarios.clear()
+            state.completed.clear();state.tutorial_pending=None;state.tutorial_active=None
     return {'ok':True}
 
 def limited(s,category,limit):
-    retry=rates.check((s.session_id,category),limit)
+    retry=rates.check((s.user_id or s.session_id,category),limit)
     if retry: raise HTTPException(429,'Слишком много запросов.',headers={'Retry-After':str(retry)})
 
 def percentile(vals,p):
@@ -122,6 +141,7 @@ async def create(request:Request,response:Response):
     u=current_user(request)
     old=store.get(request.cookies.get('vr_session'))
     if old and old.user_id==u['id']:return {'csrf':old.csrf,'state':old.context(),'history':old.conversation_history,'mode':settings.mode}
+    if sum(s.user_id==u['id'] for s in store.sessions.values())>=3:raise HTTPException(429,'Слишком много активных сессий.')
     try:s=store.create()
     except ValueError:raise HTTPException(429,'Session capacity reached',headers={'Retry-After':'30'})
     s.user_id=u['id']
@@ -150,12 +170,14 @@ async def run_turn(state,text,request_id,stt_ms=0):
     text=normalize(text)
     if not text or len(text)>4000:raise HTTPException(422,'Пустая или слишком длинная реплика.')
     limited(state,'route',30)
+    if state.lock.locked():raise HTTPException(409,'Предыдущая фраза ещё обрабатывается.')
     async with state.lock:
         if request_id in state.results:return state.results[request_id]
         started=time.perf_counter();t=started
         quick=tutorials.handle(text,state)
         if quick is not None:return simple_result(state,text,quick,request_id,started)
-        d,audit=await engine.decide(text,state)
+        if route_slots.locked():raise HTTPException(429,'Помощник занят. Повторите через несколько секунд.')
+        async with route_slots:d,audit=await engine.decide(text,state)
         router_ms=(time.perf_counter()-t)*1000;t=time.perf_counter()
         # engine.decide includes strict validation; capture final catalog validation independently.
         from .router.validator import validate
@@ -201,6 +223,7 @@ def simple_result(state,text,response,request_id,started=None):
     return result
 
 class GuideAction(BaseModel):
+    model_config=ConfigDict(extra='forbid')
     action:str
     index:int=Field(default=0,ge=0,le=20)
 
@@ -228,22 +251,38 @@ async def route_turn(body:Turn,request:Request):
 async def audio(request_id:UUID,request:Request):
     s=session(request,False);limited(s,'tts',40)
     entry=s.audio_responses.get(str(request_id))
-    if not entry or time.time()-entry['created']>180 or entry['plays']>=2:raise HTTPException(404,'Audio expired')
+    if not entry or time.time()-entry['created']>180 or entry['plays']>=5:raise HTTPException(404,'Audio expired')
     entry['plays']+=1;t=time.perf_counter()
-    upstream=await http.send(http.build_request('POST','https://api.openai.com/v1/audio/speech',
+    if entry.get('cached_audio'):return Response(entry['cached_audio'],media_type='audio/mpeg')
+    if entry.get('generating') or audio_slots.locked():raise HTTPException(429,'Озвучивание занято. Попробуйте ещё раз.')
+    await audio_slots.acquire();entry['generating']=True
+    try:
+        upstream=await http.send(http.build_request('POST','https://api.openai.com/v1/audio/speech',
       headers={'Authorization':'Bearer '+settings.openai_key},json={'model':settings.tts_model,'voice':settings.voice,
-       'input':entry['text'],'response_format':'mp3','instructions':'You are a friendly female assistant speaking naturally to one person. Warm, relaxed, reassuring, expressive conversational intonation, gentle smile, short natural pauses. Never sound like a robot, announcer or scripted call center. Speak clearly at a comfortable, slightly brisk pace. Preserve the language of the text, Russian or Kazakh, with natural pronunciation. Do not add words.'}),stream=True)
+       'input':entry['text'],'response_format':'mp3','instructions':'You are a friendly female assistant speaking naturally to one person. Warm, relaxed, reassuring, expressive conversational intonation, gentle smile, short natural pauses. Never sound like a robot, announcer or scripted call center. Speak clearly at a comfortable, slightly brisk pace. Preserve the language of the text, Russian or Kazakh, with natural pronunciation. Do not add words.'},timeout=8),stream=True)
+    except BaseException:
+        audio_slots.release();entry['generating']=False
+        raise
     if upstream.status_code!=200:
-        await upstream.aclose();raise HTTPException(502,'Озвучивание недоступно; текстовый ответ сохранён.')
+        await upstream.aclose();audio_slots.release();entry['generating']=False
+        raise HTTPException(502,'Озвучивание недоступно; текстовый ответ сохранён.')
     async def generate():
-        first=True
+        first=True;chunks=bytearray();complete=False
         try:
             async for chunk in upstream.aiter_bytes():
                 if first:
                     entry['trace']['latency']['first_audio_ms']=round((time.perf_counter()-entry['started'])*1000,2);first=False
                 yield chunk
+                if chunks is not None:
+                    if len(chunks)+len(chunk)<=524288:chunks.extend(chunk)
+                    else:chunks=None
+            complete=True
         finally:
             await upstream.aclose()
+            audio_slots.release();entry['generating']=False
+            if complete and chunks:
+                for old in s.audio_responses.values():old.pop('cached_audio',None)
+                entry['cached_audio']=bytes(chunks)
             entry['trace']['latency']['tts_ms']=round((time.perf_counter()-t)*1000,2)
             entry['trace']['latency']['total_ms']=round((time.perf_counter()-entry['started'])*1000,2)
     return StreamingResponse(generate(),media_type='audio/mpeg')
@@ -256,18 +295,7 @@ async def trace(request_id:UUID,request:Request):
 
 @app.post('/api/realtime/token')
 async def realtime_token(request:Request):
-    s=session(request);limited(s,'realtime_token',3)
-    if not settings.openai_key:raise HTTPException(503,'OpenAI not configured')
-    if sum(x.voice_active for x in store.sessions.values())>=settings.max_voice and not s.voice_active:
-        raise HTTPException(429,'Voice capacity reached',headers={'Retry-After':'30'})
-    try:
-        r=await http.post('https://api.openai.com/v1/realtime/client_secrets',
-          headers={'Authorization':'Bearer '+settings.openai_key,'OpenAI-Safety-Identifier':session_hash(s.session_id)},
-          json={'expires_after':{'anchor':'created_at','seconds':60},'session':session_config(settings)})
-        if r.status_code!=200:raise HTTPException(502,'Realtime provider rejected session configuration')
-        data=r.json()
-        return {'value':data['value'],'expires_at':data['expires_at']}
-    except httpx.HTTPError:raise HTTPException(502,'Realtime provider unavailable')
+    raise HTTPException(410,'Прямые API-токены отключены. Используйте защищённое голосовое соединение.')
 
 @app.websocket('/api/voice')
 async def voice(ws:WebSocket):

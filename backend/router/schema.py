@@ -33,6 +33,21 @@ class Decision(Strict):
 
 DECISION_SCHEMA = Decision.model_json_schema()
 
+class CompactDecision(Strict):
+    decision: Literal['route','continue','clarify','handoff']
+    scenario_id: str | None
+    confidence: float = Field(ge=0,le=1)
+    reason_short: str = Field(max_length=120)
+    alternatives: list[Alternative] = Field(max_length=2)
+    language: Literal['ru','kk','mixed','other']
+    pending_scenario_ids: list[str] = Field(max_length=4)
+    extracted_slots: list[Slot] = Field(max_length=8)
+    action: str
+    clarifying_question: str | None
+    context_sufficient: bool
+
+COMPACT_SCHEMA = CompactDecision.model_json_schema()
+
 class SlotSpec(BaseModel):
     model_config = ConfigDict(extra='forbid')
     name: str

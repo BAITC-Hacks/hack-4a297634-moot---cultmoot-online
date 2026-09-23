@@ -1,4 +1,6 @@
 import unicodedata
+import asyncio
+import re
 from ..config import ROOT
 from ..providers.base import ProviderFailure, InvalidOutput
 from .validator import validate, Rejected, safe_decision
@@ -10,19 +12,38 @@ class Engine:
     def __init__(self,catalog,providers,backend,knowledge,settings):
         self.catalog,self.providers,self.backend,self.knowledge,self.settings=catalog,providers,backend,knowledge,settings
         self.prefix=(ROOT/'backend/prompts/router_system.txt').read_text()+ '\nSCENARIO_CATALOG:\n'+catalog.prefix
+        self.exact_examples={}
+        for scenario in catalog.scenarios:
+            for lang,examples in [('ru',scenario.examples_ru),('kk',scenario.examples_kk),('mixed',scenario.examples_mixed)]:
+                for example in examples:
+                    key=normalize(example).casefold().strip(' .!?')
+                    prior=self.exact_examples.get(key)
+                    self.exact_examples[key]=(scenario.id,lang) if key not in self.exact_examples or prior==(scenario.id,lang) else None
 
     def primary(self):
         return 'openai'
 
     async def decide(self,text,state):
+        exact=self.exact_examples.get(normalize(text).casefold().strip(' .!?'))
+        if exact and not state.active_scenario and not state.awaiting_confirmation and not state.pending_topics and not re.search(r'\d',text):
+            sid,lang=exact;s=self.catalog.by_id[sid]
+            action='handoff' if s.handoff else 'ask_slot' if s.required_slots else 'provide_information' if 'provide_information' in s.allowed_actions else None
+            if action:
+                d=safe_decision(self.catalog,lang,handoff=s.handoff).model_copy(update={
+                    'decision':'handoff' if s.handoff else 'route','scenario_id':sid,'confidence':1.0,
+                    'reason_short':'Точное однозначное совпадение с проверенным примером.',
+                    'action':action,'context_sufficient':True,'response_mode':'handoff' if s.handoff else 'knowledge' if action=='provide_information' else 'template'})
+                validate(d,self.catalog,state,text)
+                return d,{'provider':'local_exact','attempts':0,'errors':[],'usage':{},'fallback':False}
         data={'state':state.context(),'recent_turns':state.conversation_history[-10:],'transcript':text}
         name=self.primary()
         audit={'provider':name,'attempts':0,'errors':[],'usage':{},'fallback':False}
-        # One regular OpenAI request; at most one structured-output repair.
-        for attempt in range(2):
+        # One bounded request. A failed validation asks a safe clarification without a second slow call.
+        for attempt in range(1):
             audit['attempts']+=1
             try:
-                d,usage=await self.providers[name].route(self.prefix,data)
+                async with asyncio.timeout(self.settings.router_deadline):
+                    d,usage=await self.providers[name].route(self.prefix,data)
                 validate(d,self.catalog,state,text)
                 audit.update(provider=name,usage=usage)
                 if d.decision not in {'clarify','handoff'} and (d.confidence<.65 or not d.context_sufficient or
@@ -34,6 +55,9 @@ class Engine:
                 audit['errors'].append(str(e))
                 data['validation_error']=str(e)
                 data['repair_instruction']='Return a corrected object satisfying the schema and catalog.'
+            except TimeoutError:
+                audit['errors'].append('router_deadline')
+                break
             except ProviderFailure as e:
                 audit['errors'].append(e.kind)
                 break
