@@ -5,6 +5,10 @@ from dataclasses import dataclass, field
 
 @dataclass
 class Session:
+    user_id: str | None = None
+    tutorial_pending: str | None = None
+    tutorial_active: str | None = None
+    tutorial_step: int = 0
     session_id: str = field(default_factory=lambda: secrets.token_urlsafe(32))
     csrf: str = field(default_factory=lambda: secrets.token_urlsafe(24))
     language: str = 'ru'

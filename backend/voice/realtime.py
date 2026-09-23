@@ -5,16 +5,17 @@ import time
 import websockets
 from fastapi import WebSocket
 
-def session_config(settings):
+def session_config(settings,language='auto'):
     audio={'format':{'type':'audio/pcm','rate':24000},
            'transcription':{'model':settings.realtime_model,'prompt':'Банковский разговор: русский, қазақша, mixed RU/KZ. Halyk, карта, несие, аударым, депозит.'},
            'noise_reduction':{'type':'near_field'},
-           'turn_detection':{'type':'server_vad','threshold':0.5,'prefix_padding_ms':300,'silence_duration_ms':650}}
+           'turn_detection':{'type':'server_vad','threshold':0.4,'prefix_padding_ms':300,'silence_duration_ms':450}}
+    if language in {'ru','kk'}:audio['transcription']['language']=language
     if settings.realtime_model=='gpt-live-transcribe':
         audio['turn_detection']=None
     return {'type':'transcription','audio':{'input':audio}}
 
-async def proxy_voice(ws:WebSocket,state,settings,route_callback):
+async def proxy_voice(ws:WebSocket,state,settings,route_callback,authorized=lambda:True):
     """Bounded PCM stream. Standard API key never leaves the server."""
     if not settings.openai_key:
         await ws.close(code=1011,reason='OpenAI not configured');return
@@ -25,13 +26,16 @@ async def proxy_voice(ws:WebSocket,state,settings,route_callback):
         async with websockets.connect('wss://api.openai.com/v1/realtime?intent=transcription',
             additional_headers={'Authorization':'Bearer '+settings.openai_key},max_size=1024*1024,
             open_timeout=15,ping_interval=20) as upstream:
-            await upstream.send(json.dumps({'type':'session.update','session':session_config(settings)}))
-            start=time.monotonic(); audio_bytes=0; turn_start=None
+            await upstream.send(json.dumps({'type':'session.update','session':session_config(settings,ws.query_params.get('language','auto'))}))
+            start=time.monotonic(); audio_bytes=0; turn_start=None; last_auth=start
             finals=asyncio.Queue(maxsize=4)
             item_order=[]; completed={}; stopped={}; partials={}
             async def receive_browser():
-                nonlocal audio_bytes,turn_start
+                nonlocal audio_bytes,turn_start,last_auth
                 async for message in ws.iter_bytes():
+                    if time.monotonic()-last_auth>5:
+                        if not authorized():raise ValueError('authentication_expired')
+                        last_auth=time.monotonic()
                     if len(message)>24000 or len(message)%2: raise ValueError('audio_chunk_limit')
                     if time.monotonic()-start>settings.ttl: raise ValueError('voice_session_expired')
                     state.last_activity_at=time.time()
@@ -49,7 +53,11 @@ async def proxy_voice(ws:WebSocket,state,settings,route_callback):
                     elif kind=='input_audio_buffer.speech_stopped':
                         stopped[item]=time.perf_counter(); turn_start=None
                         await ws.send_json({'type':'speech_stopped'})
-                    elif kind=='input_audio_buffer.committed': item_order.append(item)
+                    elif kind=='input_audio_buffer.committed':
+                        item_order.append(item)
+                        while item_order and item_order[0] in completed:
+                            current=item_order.pop(0)
+                            await finals.put((completed.pop(current),stopped.pop(current,time.perf_counter())))
                     elif kind=='conversation.item.input_audio_transcription.delta':
                         partials[item]=partials.get(item,'')+event.get('delta','')
                         await ws.send_json({'type':'partial','text':partials[item][:4000]})
@@ -65,8 +73,12 @@ async def proxy_voice(ws:WebSocket,state,settings,route_callback):
                     text,end=await finals.get()
                     if not text.strip(): continue
                     await ws.send_json({'type':'final','text':text})
-                    result=await route_callback(text,(time.perf_counter()-end)*1000)
-                    await ws.send_json({'type':'result','data':result})
+                    try:
+                        if not authorized():raise ValueError('authentication_expired')
+                        result=await route_callback(text,(time.perf_counter()-end)*1000)
+                        await ws.send_json({'type':'result','data':result})
+                    except Exception:
+                        await ws.send_json({'type':'error','message':'Не удалось обработать фразу. Повторите или напишите её.'})
             tasks=[asyncio.create_task(c()) for c in [receive_browser,receive_provider,process_turns]]
             done,pending=await asyncio.wait(tasks,return_when=asyncio.FIRST_COMPLETED)
             for task in done: task.result()

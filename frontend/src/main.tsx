@@ -5,9 +5,13 @@ import{dictionary,Language}from'./i18n';
 import{VoiceConnection}from'./voice/VoiceConnection';
 import{Orb}from'./components/Orb';
 import{Icon}from'./components/Icon';
+import{Auth}from'./components/Auth';
+import{Tutorial}from'./components/Tutorial';
 import'./styles/app.css';
+import'./styles/upgrade.css';
 
 function App(){
+ const[user,setUser]=useState<any>(null),[checking,setChecking]=useState(true),[voiceLanguage,setVoiceLanguage]=useState('auto'),[saved,setSaved]=useState<any[]>([]),[guideBusy,setGuideBusy]=useState(false);
  const[lang,setLang]=useState<Language>('ru'),[page,setPage]=useState('assistant'),[status,setStatus]=useState('idle');
  const[connected,setConnected]=useState(false),[level,setLevel]=useState(0),[text,setText]=useState(''),[partial,setPartial]=useState('');
  const[trace,setTrace]=useState<Trace|null>(null),[result,setResult]=useState<Result|null>(null),[history,setHistory]=useState<{role:string;content:string}[]>([]);
@@ -15,7 +19,8 @@ function App(){
  const voice=useRef<VoiceConnection|null>(null),audio=useRef<HTMLAudioElement|null>(null),isConnected=useRef(false),speechStart=useRef(0),speechEnd=useRef(0),busy=useRef(false);
  const t=dictionary[lang];const currentLanguage=useRef(lang);currentLanguage.current=lang;
  const refresh=async()=>{try{setDiagnostics(await request('/api/diagnostics'));}catch(e){setError(String(e));}};
- useEffect(()=>{openSession().then(s=>{setHistory(s.history);setReady(true);refresh();}).catch(e=>setError(e.message));return()=>{voice.current?.stop();audio.current?.pause();};},[]);
+ const boot=async()=>{try{const me=await request('/api/me');setUser(me.user);const s=await openSession();setHistory(s.history);setReady(true);await refresh();}catch{setUser(null);}finally{setChecking(false);}};
+ useEffect(()=>{boot();return()=>{voice.current?.stop();audio.current?.pause();};},[]);
  useEffect(()=>{document.documentElement.lang=lang;},[lang]);
  useEffect(()=>{if(status!=='speaking')return;const id=setInterval(()=>setDuration((performance.now()-speechStart.current)/1000),100);return()=>clearInterval(id);},[status]);
  const stopAudio=()=>{if(audio.current){audio.current.pause();audio.current.removeAttribute('src');audio.current.load();audio.current=null;}};
@@ -25,7 +30,7 @@ function App(){
    a.onerror=()=>{setError(dictionary[currentLanguage.current].audioError);setStatus(isConnected.current?'listening':'idle');};
    a.play().catch(()=>{setError(dictionary[currentLanguage.current].audioError);setStatus(isConnected.current?'listening':'idle');});
  };
- const receiveResult=(r:Result)=>{setResult(r);setTrace(r.trace);setPartial(r.trace.transcript);setHistory(h=>[...h,{role:'user',content:r.trace.transcript},{role:'assistant',content:r.response}].slice(-40));busy.current=false;setStatus(isConnected.current?'listening':'idle');play(r);};
+ const receiveResult=(r:Result)=>{setResult(r);setTrace(r.trace);if(r.trace.language==='ru'||r.trace.language==='kk')setLang(r.trace.language);setPartial(r.trace.transcript);setHistory(h=>[...h,{role:'user',content:r.trace.transcript},{role:'assistant',content:r.response}].slice(-40));busy.current=false;setStatus(isConnected.current?'listening':'idle');play(r);};
  const disconnect=()=>{voice.current?.stop();voice.current=null;isConnected.current=false;setConnected(false);setLevel(0);setStatus('idle');};
  const toggleMic=async()=>{if(connected){disconnect();return;}setError('');setStatus('connecting');
   try{const v=new VoiceConnection();voice.current=v;await v.start(event=>{
@@ -34,9 +39,9 @@ function App(){
    if(event.type==='speech_stopped'){speechEnd.current=performance.now();setStatus('thinking');busy.current=true;}
    if(event.type==='partial'||event.type==='final')setPartial(event.text);
    if(event.type==='result')receiveResult(event.data);
-   if(event.type==='error'){setError(event.message);busy.current=false;}
+   if(event.type==='error'){setError(event.message);busy.current=false;setStatus('listening');}
    if(event.type==='closed'){disconnect();busy.current=false;}
-  },setLevel,()=>{if(audio.current&&!audio.current.paused){stopAudio();setStatus('speaking');speechStart.current=performance.now();}});
+  },setLevel,()=>{},voiceLanguage);
   isConnected.current=true;setConnected(true);setStatus('listening');
   }catch(e){disconnect();setError((e as Error).message);}
  };
@@ -46,13 +51,18 @@ function App(){
  const end=async()=>{disconnect();stopAudio();try{await request('/api/session','DELETE');const s=await openSession();setHistory(s.history);setTrace(null);setResult(null);setPartial('');setDuration(0);setError('');}catch(e){setError(String(e));}};
  const ms=(n:number|null|undefined)=>n==null?'—':`${Math.round(n).toLocaleString()} ms`;
  const healthy=diagnostics?.providers?.openai?.configured;
- return <><header><a className="brand" href="/" aria-label="Voice Router"><span className="brand-mark"><i/><i/><i/></span><span>Voice Router<small>HackAlem <b>•</b> Demo</small></span></a>
-  <nav>{['assistant','instructions','diagnostics'].map(p=><button key={p} className={page===p?'nav-active':''} onClick={()=>{setPage(p);if(p==='diagnostics')refresh();}}>{t[p as 'assistant']}</button>)}</nav>
+ const guideAction=async(action:string,index=0)=>{setGuideBusy(true);stopAudio();try{const r=await request('/api/tutorial','POST',{action,index});if(r.closed){setResult(prev=>prev?{...prev,tutorial:null,tutorial_offer:false}:prev);setStatus(connected?'listening':'idle');}else receiveResult(r);}catch(e){setError((e as Error).message);}finally{setGuideBusy(false);}};
+ const signOut=async()=>{disconnect();stopAudio();try{await request('/api/logout','POST',{});setUser(null);setReady(false);setHistory([]);setResult(null);setTrace(null);window.history.replaceState({},'','/login');}catch(e){setError((e as Error).message);}};
+ if(checking)return <main className="loading">Загружаем ваш кабинет…</main>;
+ if(!user)return <Auth onLogin={boot}/>;
+ return <><header><a className="brand" href="/" aria-label="Halyk AI demo"><span className="halyk-symbol">●</span><span>halyk<small>AI көмекші <b>•</b> Demo</small></span></a>
+  <nav>{['assistant','instructions','history','diagnostics'].map(p=><button key={p} className={page===p?'nav-active':''} onClick={()=>{setPage(p);if(p==='diagnostics')refresh();if(p==='history')request('/api/history').then(r=>setSaved(r.messages)).catch(e=>setError(e.message));}}>{p==='history'?'История':t[p as 'assistant']}</button>)}</nav><button className="text-button" onClick={signOut}>Выйти</button>
   <div className="language"><button className={lang==='kk'?'selected':''} onClick={()=>setLang('kk')}>KAZ</button><button className={lang==='ru'?'selected':''} onClick={()=>setLang('ru')}>RUS</button></div></header>
  <main>{page==='assistant'?<>
- <div className="intro"><span className="eyebrow"><span className="small-dot"/>{t.eyebrow}</span><h1>{t.headline}<span>.</span></h1><p>{t.subhead}</p></div>
+ <div className="intro"><span className="eyebrow"><span className="small-dot"/>HALYK · AI ПОМОЩНИК</span><h1>{lang==='kk'?'Көмек әрдайым қасыңызда':'Помощь начинается с разговора'}<span>.</span></h1><p>{lang==='kk'?'Сұраңыз. Бірге түсінеміз, қадамдап көрсетеміз.':'Спросите. Разберёмся вместе и покажем, куда нажать.'}</p></div>
  <div className="workspace"><section className="assistant-stage" aria-label={t.assistant}>
   <div className="stage-badge"><Icon name="shield" size={14}/><span>RU / KZ / MIXED</span><span className="separator"/>AI VOICE</div>
+  <div className="speech-language"><label htmlFor="speech-language">Язык речи / Сөйлеу тілі</label><select id="speech-language" value={voiceLanguage} disabled={connected} onChange={e=>setVoiceLanguage(e.target.value)}><option value="auto">Авто · Auto</option><option value="ru">Русский</option><option value="kk">Қазақша</option></select><small>{trace?`Распознано: ${trace.language.toUpperCase()}`:'Русский и қазақша'}</small></div>
   <Orb level={level} active={connected}/>
   <div className="state" aria-live="polite"><span className={'state-dot '+(connected?'on':'')}/>{t[status as 'idle']||status}</div>
   <div className={'transcript '+(partial?'has-text':'')}>{partial?`«${partial}»`:t.placeholder}</div>
@@ -60,6 +70,7 @@ function App(){
   <div className="voice-meta"><span>{t.pause}</span><b>·</b><span>{duration.toFixed(1)} s</span></div>
   {keyboard&&<form className="debug-input" onSubmit={sendText}><label htmlFor="debug-text">{t.input}</label><div><input id="debug-text" value={text} maxLength={4000} onChange={e=>setText(e.target.value)} autoFocus/><button disabled={!text.trim()||status==='thinking'||!healthy}>{t.send}</button></div></form>}
   {error&&<div role="alert" className="error">{error}</div>}
+  {result?.tutorial_offer&&<div className="guide-offer"><span>Показать по шагам? / Қадамдап көрсетейін бе?</span><button className="primary" disabled={guideBusy} onClick={()=>guideAction('accept')}>Да, покажи / Иә</button><button className="text-button" onClick={()=>guideAction('close')}>Не сейчас / Кейін</button></div>}
   {!healthy&&diagnostics&&<div className="error">{t.keyMissing}</div>}
   {result&&<div className="spoken-response"><span>{t.agent}</span><p>{result.response}</p><button title={t.retry} aria-label={t.retry} onClick={()=>play(result)}><Icon name="speaker" size={19}/></button></div>}
   <div className="privacy"><Icon name="shield" size={15}/>{t.privacy}</div>
@@ -74,7 +85,9 @@ function App(){
   {trace&&<details><summary>{t.trace}<Icon name="arrow" size={15}/></summary><pre>{JSON.stringify({trace,state:result?.state,backend:result?.backend},null,2)}</pre></details>}
  </aside></div>
  <section className="history"><div className="section-heading"><h2>{t.history}</h2><button onClick={end}>{t.reset}<Icon name="arrow" size={15}/></button></div>{history.length?history.map((m,i)=><div key={i} className={'message '+m.role}><span>{m.role==='user'?t.you:t.agent}</span><p>{m.content}</p></div>):<p className="muted">{t.emptyHistory}</p>}</section>
- </>:page==='instructions'?<section className="page-card"><span className="eyebrow">VOICE ROUTER / GUIDE</span><h1>{t.instructionTitle}</h1><ol className="steps">{t.steps.map(s=><li key={s}>{s}</li>)}</ol><div className="safety"><Icon name="shield"/>{t.safety}</div><p>{t.demo}</p></section>:<section className="page-card"><div className="section-heading"><h1>{t.diagnostics}</h1><button onClick={refresh}>{t.refresh}</button></div><p className="muted">{t.measured}</p><div className="diagnostic-grid">{['openai'].map(p=><article key={p}><label>{p.toUpperCase()}</label><h3>{diagnostics?.providers?.[p]?.configured?t.ready:t.missing}</h3><p>{diagnostics?.providers?.[p]?.model||'—'}</p><small>Circuit: {diagnostics?.providers?.[p]?.circuit||'—'}</small></article>)}{[[t.catalog,diagnostics?.scenario_count],[t.mode,diagnostics?.mode?.toUpperCase()],[t.sessions,diagnostics?.active_sessions],['Router p50',ms(diagnostics?.router_p50_ms)],['Router p95',ms(diagnostics?.router_p95_ms)],[t.errorRate,diagnostics?.error_rate==null?'—':(diagnostics.error_rate*100).toFixed(1)+'%']].map(([label,value])=><article key={label}><label>{label}</label><h3>{value??'—'}</h3></article>)}</div></section>}
- </main><footer><span className="footer-mark">VOICE ROUTER</span><p>{t.demo}</p><span>V1.0</span></footer></>;
+ </>:page==='instructions'?<section className="page-card"><span className="eyebrow">VOICE ROUTER / GUIDE</span><h1>{t.instructionTitle}</h1><ol className="steps">{t.steps.map(s=><li key={s}>{s}</li>)}</ol><div className="safety"><Icon name="shield"/>{t.safety}</div><p>{t.demo}</p></section>:page==='diagnostics'?<section className="page-card"><div className="section-heading"><h1>{t.diagnostics}</h1><button onClick={refresh}>{t.refresh}</button></div><p className="muted">{t.measured}</p><div className="diagnostic-grid">{['openai'].map(p=><article key={p}><label>{p.toUpperCase()}</label><h3>{diagnostics?.providers?.[p]?.configured?t.ready:t.missing}</h3><p>{diagnostics?.providers?.[p]?.model||'—'}</p><small>Circuit: {diagnostics?.providers?.[p]?.circuit||'—'}</small></article>)}{[[t.catalog,diagnostics?.scenario_count],[t.mode,diagnostics?.mode?.toUpperCase()],[t.sessions,diagnostics?.active_sessions],['Router p50',ms(diagnostics?.router_p50_ms)],['Router p95',ms(diagnostics?.router_p95_ms)],[t.errorRate,diagnostics?.error_rate==null?'—':(diagnostics.error_rate*100).toFixed(1)+'%']].map(([label,value])=><article key={label}><label>{label}</label><h3>{value??'—'}</h3></article>)}</div></section>:null}
+ {page==='history'&&<section className="history"><div className="section-heading"><h2>Мои разговоры</h2><button onClick={async()=>{await request('/api/history','DELETE');setSaved([]);setHistory([]);}}>Удалить мои разговоры</button></div><p className="muted">{user.email} · Видны только вам. Аудиозаписи не сохраняются.</p>{saved.length?saved.map((m,i)=><div className={'message '+m.role} key={i}><span>{m.role==='user'?'Вы':'AI'}</span><p>{m.content}</p></div>):<p>Пока нет сохранённых разговоров.</p>}</section>}
+ {page==='instructions'&&<section className="bank-info"><h2>Halyk рядом</h2><p>В приложении Halyk доступны переводы, платежи, управление картами и счетами. Актуальные условия проверяйте на официальном сайте банка.</p><a href="https://halykbank.kz" target="_blank" rel="noreferrer">Официальный сайт ↗</a><a href="https://halykbank.kz/knowledge_base/3286" target="_blank" rel="noreferrer">Помощь с переводами ↗</a><p>Скажите «Не могу найти переводы» — помощник предложит учебную инструкцию.</p></section>}
+ </main>{result?.tutorial&&<Tutorial guide={result.tutorial} onStep={n=>guideAction('step',n)} onClose={()=>guideAction('close')} busy={guideBusy}/>}<footer><span className="footer-mark">HALYK AI · DEMO</span><p>Независимый учебный проект, не официальный сайт Halyk Bank. Ответы озвучивает ИИ. Реальные операции не выполняются.</p><span>V1.1</span></footer></>;
 }
 createRoot(document.getElementById('root')!).render(<App/>);
