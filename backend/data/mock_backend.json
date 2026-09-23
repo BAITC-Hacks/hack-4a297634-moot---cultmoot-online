@@ -1,0 +1,744 @@
+{
+  "clients": [
+    {
+      "client_id": "DEMO-10001",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-1",
+          "last4": "1000",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-1",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 10000
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-1",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-1",
+          "status": "processing"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-1",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10002",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-2",
+          "last4": "1001",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-2",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 10100
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-2",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-2",
+          "status": "delivered_demo"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-2",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10003",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-3",
+          "last4": "1002",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-3",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 10200
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-3",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-3",
+          "status": "processing"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-3",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10004",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-4",
+          "last4": "1003",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-4",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 10300
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-4",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-4",
+          "status": "delivered_demo"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-4",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10005",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-5",
+          "last4": "1004",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-5",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 10400
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-5",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-5",
+          "status": "processing"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-5",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10006",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-6",
+          "last4": "1005",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-6",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 10500
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-6",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-6",
+          "status": "delivered_demo"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-6",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10007",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-7",
+          "last4": "1006",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-7",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 10600
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-7",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-7",
+          "status": "processing"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-7",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10008",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-8",
+          "last4": "1007",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-8",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 10700
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-8",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-8",
+          "status": "delivered_demo"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-8",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10009",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-9",
+          "last4": "1008",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-9",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 10800
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-9",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-9",
+          "status": "processing"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-9",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10010",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-10",
+          "last4": "1009",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-10",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 10900
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-10",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-10",
+          "status": "delivered_demo"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-10",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10011",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-11",
+          "last4": "1010",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-11",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 11000
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-11",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-11",
+          "status": "processing"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-11",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10012",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-12",
+          "last4": "1011",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-12",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 11100
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-12",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-12",
+          "status": "delivered_demo"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-12",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10013",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-13",
+          "last4": "1012",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-13",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 11200
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-13",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-13",
+          "status": "processing"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-13",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10014",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-14",
+          "last4": "1013",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-14",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 11300
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-14",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-14",
+          "status": "delivered_demo"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-14",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10015",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-15",
+          "last4": "1014",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-15",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 11400
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-15",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-15",
+          "status": "processing"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-15",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10016",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-16",
+          "last4": "1015",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-16",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 11500
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-16",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-16",
+          "status": "delivered_demo"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-16",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10017",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-17",
+          "last4": "1016",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-17",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 11600
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-17",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-17",
+          "status": "processing"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-17",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10018",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-18",
+          "last4": "1017",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-18",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 11700
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-18",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-18",
+          "status": "delivered_demo"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-18",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10019",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-19",
+          "last4": "1018",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-19",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 11800
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-19",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-19",
+          "status": "processing"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-19",
+          "status": "trusted"
+        }
+      ]
+    },
+    {
+      "client_id": "DEMO-10020",
+      "synthetic": true,
+      "cards": [
+        {
+          "id": "CARD-20",
+          "last4": "1019",
+          "status": "active"
+        }
+      ],
+      "loans": [
+        {
+          "id": "LOAN-20",
+          "status": "active",
+          "next_payment": "2030-01-15",
+          "amount_demo": 11900
+        }
+      ],
+      "deposits": [
+        {
+          "id": "DEP-20",
+          "status": "open"
+        }
+      ],
+      "transfers": [
+        {
+          "id": "TR-20",
+          "status": "delivered_demo"
+        }
+      ],
+      "devices": [
+        {
+          "id": "DEV-20",
+          "status": "trusted"
+        }
+      ]
+    }
+  ]
+}

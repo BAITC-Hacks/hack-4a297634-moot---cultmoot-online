@@ -1,0 +1,4 @@
+export function Icon({name,size=22}:{name:string;size?:number}){
+ const paths:Record<string,React.ReactNode>={mic:<><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8"/></>,keyboard:<><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M6 9h1m3 0h1m3 0h1m3 0h0M6 13h1m3 0h1m3 0h1m3 0h0M8 16h8"/></>,end:<><path d="M3 15c5-6 13-6 18 0l-3 4-4-2v-3h-4v3l-4 2z"/></>,arrow:<path d="m9 5 7 7-7 7"/>,check:<path d="m5 12 4 4L19 6"/>,pulse:<path d="M2 12h5l3-7 4 14 3-7h5"/>,shield:<><path d="m12 2 8 4v6c0 5-8 10-8 10S4 17 4 12V6z"/><path d="m8 12 3 3 5-6"/></>,speaker:<><path d="M3 9h4l5-4v14l-5-4H3zM16 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></>};
+ return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]||paths.pulse}</svg>;
+}

@@ -1,0 +1,1581 @@
+[
+  {
+    "id": "card_open_digital",
+    "name_ru": "Цифровая карта",
+    "name_kk": "Цифрлық карта",
+    "description": "Открытие новой виртуальной карты без пластика",
+    "include_when": [
+      "Открытие новой виртуальной карты без пластика"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: card_order_physical"
+    ],
+    "neighbor_scenarios": [
+      "card_order_physical"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Хочу открыть цифровую карту"
+    ],
+    "examples_kk": [
+      "Цифрлық карта ашқым келеді"
+    ],
+    "examples_mixed": [
+      "Маған digital карта керек без пластика"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "card_order_physical",
+    "name_ru": "Пластиковая карта",
+    "name_kk": "Пластик карта",
+    "description": "Заказ или доставка физической пластиковой карты",
+    "include_when": [
+      "Заказ или доставка физической пластиковой карты"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: card_open_digital"
+    ],
+    "neighbor_scenarios": [
+      "card_open_digital"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Как заказать пластиковую карту?"
+    ],
+    "examples_kk": [
+      "Пластик картаны қалай тапсырамын?"
+    ],
+    "examples_mixed": [
+      "Digital бар, теперь нужен пластик"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "card_pin",
+    "name_ru": "PIN-код карты",
+    "name_kk": "Картаның PIN-коды",
+    "description": "Установка или смена PIN карты, не пароля приложения",
+    "include_when": [
+      "Установка или смена PIN карты, не пароля приложения"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: app_access_recovery"
+    ],
+    "neighbor_scenarios": [
+      "app_access_recovery"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Как изменить PIN карты?"
+    ],
+    "examples_kk": [
+      "Картаның PIN кодын қалай өзгертемін?"
+    ],
+    "examples_mixed": [
+      "Картаның пин-кодын поменять керек"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "card_block",
+    "name_ru": "Блокировка карты",
+    "name_kk": "Картаны бұғаттау",
+    "description": "Клиент хочет заблокировать карту, в том числе потерянную; не разблокировать",
+    "include_when": [
+      "Клиент хочет заблокировать карту, в том числе потерянную; не разблокировать"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: card_unblock,card_unauthorized_transaction"
+    ],
+    "neighbor_scenarios": [
+      "card_unblock",
+      "card_unauthorized_transaction"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "block_card"
+    ],
+    "requires_confirmation_actions": [
+      "block_card"
+    ],
+    "examples_ru": [
+      "Потерял карту, заблокируйте её"
+    ],
+    "examples_kk": [
+      "Картам жоғалды, оны бұғаттаңыз"
+    ],
+    "examples_mixed": [
+      "Картам жоғалды, заблокируйте"
+    ],
+    "action_specs": {
+      "block_card": {
+        "operation": "update",
+        "collection": "cards",
+        "value": "blocked"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "card_unblock",
+    "name_ru": "Разблокировка карты",
+    "name_kk": "Картаны бұғаттан шығару",
+    "description": "Снятие ранее установленной временной блокировки; не новая блокировка",
+    "include_when": [
+      "Снятие ранее установленной временной блокировки; не новая блокировка"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: card_block,app_access_recovery"
+    ],
+    "neighbor_scenarios": [
+      "card_block",
+      "app_access_recovery"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "unblock_card"
+    ],
+    "requires_confirmation_actions": [
+      "unblock_card"
+    ],
+    "examples_ru": [
+      "Нашёл карту, как разблокировать?"
+    ],
+    "examples_kk": [
+      "Картам табылды, бұғаттан қалай шығарамын?"
+    ],
+    "examples_mixed": [
+      "Карта табылды, разблокировать керек"
+    ],
+    "action_specs": {
+      "unblock_card": {
+        "operation": "update",
+        "collection": "cards",
+        "value": "active"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "card_limits",
+    "name_ru": "Лимиты карты",
+    "name_kk": "Карта лимиттері",
+    "description": "Лимиты покупок или снятия по карте, не комиссия перевода",
+    "include_when": [
+      "Лимиты покупок или снятия по карте, не комиссия перевода"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: transfer_fees_limits"
+    ],
+    "neighbor_scenarios": [
+      "transfer_fees_limits"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Как изменить лимит покупок по карте?"
+    ],
+    "examples_kk": [
+      "Картадағы сатып алу лимитін қалай өзгертемін?"
+    ],
+    "examples_mixed": [
+      "Картамның дневной лимитін өзгерткім келеді"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "card_unauthorized_transaction",
+    "name_ru": "Неизвестная операция",
+    "name_kk": "Бейтаныс операция",
+    "description": "Операция без согласия клиента; security-sensitive, не обычный сбой оплаты",
+    "include_when": [
+      "Операция без согласия клиента; security-sensitive, не обычный сбой оплаты"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: payment_failed,card_block"
+    ],
+    "neighbor_scenarios": [
+      "payment_failed",
+      "card_block"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "lookup_status"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "С карты списали деньги, я этого не делал"
+    ],
+    "examples_kk": [
+      "Картамнан ақша алынды, мен оны жасаған жоқпын"
+    ],
+    "examples_mixed": [
+      "Мен жасамаған списание бар"
+    ],
+    "action_specs": {
+      "lookup_status": {
+        "operation": "lookup",
+        "collection": "cards"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "atm_retained_card",
+    "name_ru": "Карта в банкомате",
+    "name_kk": "Банкоматтағы карта",
+    "description": "Банкомат удержал физическую карту",
+    "include_when": [
+      "Банкомат удержал физическую карту"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: card_block,cardless_cash_withdrawal"
+    ],
+    "neighbor_scenarios": [
+      "card_block",
+      "cardless_cash_withdrawal"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Банкомат съел карту"
+    ],
+    "examples_kk": [
+      "Банкомат картамды жұтып қойды"
+    ],
+    "examples_mixed": [
+      "Банкомат картамды съел"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "smartphone_pay",
+    "name_ru": "Оплата смартфоном",
+    "name_kk": "Смартфонмен төлеу",
+    "description": "Apple Pay, Google Pay, NFC и токенизация карты, не QR",
+    "include_when": [
+      "Apple Pay, Google Pay, NFC и токенизация карты, не QR"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: qr_payment,payment_failed"
+    ],
+    "neighbor_scenarios": [
+      "qr_payment",
+      "payment_failed"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Как добавить карту в Apple Pay?"
+    ],
+    "examples_kk": [
+      "Картаны Apple Pay-ге қалай қосамын?"
+    ],
+    "examples_mixed": [
+      "Картаны Apple Pay добавить керек"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "cardless_cash_withdrawal",
+    "name_ru": "Наличные без карты",
+    "name_kk": "Картасыз қолма-қол ақша",
+    "description": "Снятие наличных без физической карты",
+    "include_when": [
+      "Снятие наличных без физической карты"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: atm_retained_card"
+    ],
+    "neighbor_scenarios": [
+      "atm_retained_card"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Как снять деньги без карты?"
+    ],
+    "examples_kk": [
+      "Картасыз ақшаны қалай аламын?"
+    ],
+    "examples_mixed": [
+      "Картам үйде, как снять наличные?"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "transfer_halyk_internal",
+    "name_ru": "Перевод клиенту Halyk",
+    "name_kk": "Halyk клиентіне аудару",
+    "description": "Перевод другому клиенту Halyk по карте; не между своими и не по телефону",
+    "include_when": [
+      "Перевод другому клиенту Halyk по карте; не между своими и не по телефону"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: transfer_between_own_accounts,transfer_by_phone,transfer_other_kz_card"
+    ],
+    "neighbor_scenarios": [
+      "transfer_between_own_accounts",
+      "transfer_by_phone",
+      "transfer_other_kz_card"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "send_transfer"
+    ],
+    "requires_confirmation_actions": [
+      "send_transfer"
+    ],
+    "examples_ru": [
+      "Как перевести на карту друга в Halyk?"
+    ],
+    "examples_kk": [
+      "Досымның Halyk картасына қалай аударамын?"
+    ],
+    "examples_mixed": [
+      "Досыма на карту Халык аудару керек"
+    ],
+    "action_specs": {
+      "send_transfer": {
+        "operation": "create",
+        "collection": "transfers",
+        "value": "submitted_demo"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "transfer_other_kz_card",
+    "name_ru": "На карту другого банка РК",
+    "name_kk": "Басқа ҚР банкінің картасына",
+    "description": "Перевод на карту другого казахстанского банка",
+    "include_when": [
+      "Перевод на карту другого казахстанского банка"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: transfer_foreign_card,transfer_halyk_internal"
+    ],
+    "neighbor_scenarios": [
+      "transfer_foreign_card",
+      "transfer_halyk_internal"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "send_transfer"
+    ],
+    "requires_confirmation_actions": [
+      "send_transfer"
+    ],
+    "examples_ru": [
+      "Как отправить на карту другого банка Казахстана?"
+    ],
+    "examples_kk": [
+      "Қазақстандағы басқа банктің картасына қалай жіберемін?"
+    ],
+    "examples_mixed": [
+      "Kaspi картасына перевод керек"
+    ],
+    "action_specs": {
+      "send_transfer": {
+        "operation": "create",
+        "collection": "transfers",
+        "value": "submitted_demo"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "transfer_foreign_card",
+    "name_ru": "На зарубежную карту",
+    "name_kk": "Шетел картасына",
+    "description": "Перевод именно на зарубежную банковскую карту, не WU или IBAN",
+    "include_when": [
+      "Перевод именно на зарубежную банковскую карту, не WU или IBAN"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: transfer_other_kz_card,transfer_western_union,transfer_iban"
+    ],
+    "neighbor_scenarios": [
+      "transfer_other_kz_card",
+      "transfer_western_union",
+      "transfer_iban"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "send_transfer"
+    ],
+    "requires_confirmation_actions": [
+      "send_transfer"
+    ],
+    "examples_ru": [
+      "Как отправить на зарубежную карту?"
+    ],
+    "examples_kk": [
+      "Шетел картасына қалай жіберемін?"
+    ],
+    "examples_mixed": [
+      "Шетелдік картаға перевод керек"
+    ],
+    "action_specs": {
+      "send_transfer": {
+        "operation": "create",
+        "collection": "transfers",
+        "value": "submitted_demo"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "transfer_by_phone",
+    "name_ru": "По номеру телефона",
+    "name_kk": "Телефон нөмірі бойынша",
+    "description": "Перевод с адресацией по мобильному телефону",
+    "include_when": [
+      "Перевод с адресацией по мобильному телефону"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: transfer_halyk_internal,transfer_iban"
+    ],
+    "neighbor_scenarios": [
+      "transfer_halyk_internal",
+      "transfer_iban"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "send_transfer"
+    ],
+    "requires_confirmation_actions": [
+      "send_transfer"
+    ],
+    "examples_ru": [
+      "Как перевести по номеру телефона?"
+    ],
+    "examples_kk": [
+      "Телефон нөмірі бойынша қалай аударамын?"
+    ],
+    "examples_mixed": [
+      "Телефон нөмірімен перевод керек"
+    ],
+    "action_specs": {
+      "send_transfer": {
+        "operation": "create",
+        "collection": "transfers",
+        "value": "submitted_demo"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "transfer_iban",
+    "name_ru": "По реквизитам IBAN",
+    "name_kk": "IBAN деректемелері бойынша",
+    "description": "Перевод по номеру счёта IBAN, не номеру карты",
+    "include_when": [
+      "Перевод по номеру счёта IBAN, не номеру карты"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: transfer_by_phone,transfer_foreign_card"
+    ],
+    "neighbor_scenarios": [
+      "transfer_by_phone",
+      "transfer_foreign_card"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "send_transfer"
+    ],
+    "requires_confirmation_actions": [
+      "send_transfer"
+    ],
+    "examples_ru": [
+      "Как перевести деньги по IBAN?"
+    ],
+    "examples_kk": [
+      "IBAN арқылы ақшаны қалай аударамын?"
+    ],
+    "examples_mixed": [
+      "IBAN бойынша перевод керек"
+    ],
+    "action_specs": {
+      "send_transfer": {
+        "operation": "create",
+        "collection": "transfers",
+        "value": "submitted_demo"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "transfer_western_union",
+    "name_ru": "Western Union",
+    "name_kk": "Western Union",
+    "description": "Отправка или получение международного перевода Western Union",
+    "include_when": [
+      "Отправка или получение международного перевода Western Union"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: transfer_foreign_card,transfer_iban"
+    ],
+    "neighbor_scenarios": [
+      "transfer_foreign_card",
+      "transfer_iban"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "send_transfer"
+    ],
+    "requires_confirmation_actions": [
+      "send_transfer"
+    ],
+    "examples_ru": [
+      "Как отправить Western Union?"
+    ],
+    "examples_kk": [
+      "Western Union арқылы қалай жіберемін?"
+    ],
+    "examples_mixed": [
+      "Western Union переводын алу керек"
+    ],
+    "action_specs": {
+      "send_transfer": {
+        "operation": "create",
+        "collection": "transfers",
+        "value": "submitted_demo"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "transfer_between_own_accounts",
+    "name_ru": "Между своими счетами",
+    "name_kk": "Өз шоттары арасында",
+    "description": "Перемещение денег между собственными картами или счетами; не другому человеку",
+    "include_when": [
+      "Перемещение денег между собственными картами или счетами; не другому человеку"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: transfer_halyk_internal,deposit_topup"
+    ],
+    "neighbor_scenarios": [
+      "transfer_halyk_internal",
+      "deposit_topup"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "send_transfer"
+    ],
+    "requires_confirmation_actions": [
+      "send_transfer"
+    ],
+    "examples_ru": [
+      "Как перевести между моими картами?"
+    ],
+    "examples_kk": [
+      "Өз карталарым арасында қалай аударамын?"
+    ],
+    "examples_mixed": [
+      "Екі карта да менікі, перевод керек"
+    ],
+    "action_specs": {
+      "send_transfer": {
+        "operation": "create",
+        "collection": "transfers",
+        "value": "submitted_demo"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "transfer_not_received",
+    "name_ru": "Перевод не поступил",
+    "name_kk": "Аударым түспеді",
+    "description": "Перевод уже отправлен, не дошёл получателю, нужен статус; не неудачная оплата услуги",
+    "include_when": [
+      "Перевод уже отправлен, не дошёл получателю, нужен статус; не неудачная оплата услуги"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: payment_failed,transfer_fees_limits"
+    ],
+    "neighbor_scenarios": [
+      "payment_failed",
+      "transfer_fees_limits"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "lookup_status"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Отправил деньги, получатель их не получил"
+    ],
+    "examples_kk": [
+      "Ақша жібердім, алушы алған жоқ"
+    ],
+    "examples_mixed": [
+      "Мен кеше перевод жасадым, деньги түспеді"
+    ],
+    "action_specs": {
+      "lookup_status": {
+        "operation": "lookup",
+        "collection": "transfers"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "transfer_fees_limits",
+    "name_ru": "Комиссии и лимиты переводов",
+    "name_kk": "Аударым комиссиялары мен лимиттері",
+    "description": "Информация о комиссии или ограничении перевода; не лимит покупок карты",
+    "include_when": [
+      "Информация о комиссии или ограничении перевода; не лимит покупок карты"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: card_limits,transfer_not_received"
+    ],
+    "neighbor_scenarios": [
+      "card_limits",
+      "transfer_not_received"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Какая комиссия за перевод?"
+    ],
+    "examples_kk": [
+      "Аударым комиссиясы қандай?"
+    ],
+    "examples_mixed": [
+      "Перевод комиссиясы қанша?"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "service_payment",
+    "name_ru": "Оплата услуг",
+    "name_kk": "Қызметтерді төлеу",
+    "description": "Оплата связи, коммунальных услуг, налогов, штрафов без сообщения о сбое",
+    "include_when": [
+      "Оплата связи, коммунальных услуг, налогов, штрафов без сообщения о сбое"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: payment_failed,qr_payment"
+    ],
+    "neighbor_scenarios": [
+      "payment_failed",
+      "qr_payment"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Как оплатить коммунальные услуги?"
+    ],
+    "examples_kk": [
+      "Коммуналдық қызметтерді қалай төлеймін?"
+    ],
+    "examples_mixed": [
+      "Коммуналка төлеу керек"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "payment_failed",
+    "name_ru": "Ошибка оплаты",
+    "name_kk": "Төлем қатесі",
+    "description": "Оплата покупки или услуги отклоняется; не перевод и не неизвестное списание",
+    "include_when": [
+      "Оплата покупки или услуги отклоняется; не перевод и не неизвестное списание"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: transfer_not_received,card_unauthorized_transaction,service_payment"
+    ],
+    "neighbor_scenarios": [
+      "transfer_not_received",
+      "card_unauthorized_transaction",
+      "service_payment"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Оплата коммуналки отклонена"
+    ],
+    "examples_kk": [
+      "Коммуналдық төлем қабылданбады"
+    ],
+    "examples_mixed": [
+      "Коммуналка төлемі не проходит"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "qr_payment",
+    "name_ru": "Оплата QR",
+    "name_kk": "QR арқылы төлеу",
+    "description": "Оплата или перевод с использованием QR; QR является основной темой",
+    "include_when": [
+      "Оплата или перевод с использованием QR; QR является основной темой"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: smartphone_pay,service_payment"
+    ],
+    "neighbor_scenarios": [
+      "smartphone_pay",
+      "service_payment"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Как заплатить по QR?"
+    ],
+    "examples_kk": [
+      "QR арқылы қалай төлеймін?"
+    ],
+    "examples_mixed": [
+      "QR кодпен оплатить керек"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "payment_receipt_history",
+    "name_ru": "Чеки и история",
+    "name_kk": "Түбіртектер мен тарих",
+    "description": "Получение квитанции, чека или истории совершённых операций",
+    "include_when": [
+      "Получение квитанции, чека или истории совершённых операций"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: transfer_not_received,card_unauthorized_transaction"
+    ],
+    "neighbor_scenarios": [
+      "transfer_not_received",
+      "card_unauthorized_transaction"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "lookup_status"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Где скачать чек об оплате?"
+    ],
+    "examples_kk": [
+      "Төлем чегін қайдан жүктеймін?"
+    ],
+    "examples_mixed": [
+      "Кешегі чек скачать керек"
+    ],
+    "action_specs": {
+      "lookup_status": {
+        "operation": "lookup",
+        "collection": "transfers"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "push_notifications",
+    "name_ru": "Push-уведомления",
+    "name_kk": "Push хабарламалар",
+    "description": "Управление push-уведомлениями и их доставкой",
+    "include_when": [
+      "Управление push-уведомлениями и их доставкой"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: app_access_recovery"
+    ],
+    "neighbor_scenarios": [
+      "app_access_recovery"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Не приходят push уведомления"
+    ],
+    "examples_kk": [
+      "Push хабарламалар келмейді"
+    ],
+    "examples_mixed": [
+      "Push уведомления келмей жатыр"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "online_cash_loan",
+    "name_ru": "Кредит наличными",
+    "name_kk": "Қолма-қол несие",
+    "description": "Оформление нового онлайн кредита наличными; не ипотека, авто или рефинансирование",
+    "include_when": [
+      "Оформление нового онлайн кредита наличными; не ипотека, авто или рефинансирование"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: loan_refinancing,digital_mortgage,auto_loan"
+    ],
+    "neighbor_scenarios": [
+      "loan_refinancing",
+      "digital_mortgage",
+      "auto_loan"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "submit_loan"
+    ],
+    "requires_confirmation_actions": [
+      "submit_loan"
+    ],
+    "examples_ru": [
+      "Хочу оформить кредит наличными"
+    ],
+    "examples_kk": [
+      "Қолма-қол несие рәсімдегім келеді"
+    ],
+    "examples_mixed": [
+      "Онлайн кредит рәсімдеу керек"
+    ],
+    "action_specs": {
+      "submit_loan": {
+        "operation": "create",
+        "collection": "loans",
+        "value": "application_received"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "loan_monthly_payment",
+    "name_ru": "Платёж по кредиту",
+    "name_kk": "Несие төлемі",
+    "description": "Обычный ежемесячный платёж по графику; не досрочное погашение и не просрочка",
+    "include_when": [
+      "Обычный ежемесячный платёж по графику; не досрочное погашение и не просрочка"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: loan_early_repayment,loan_overdue"
+    ],
+    "neighbor_scenarios": [
+      "loan_early_repayment",
+      "loan_overdue"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "lookup_status"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Как внести ежемесячный платёж по кредиту?"
+    ],
+    "examples_kk": [
+      "Несиенің ай сайынғы төлемін қалай жасаймын?"
+    ],
+    "examples_mixed": [
+      "Кредиттің ежемесячный төлемін төлеймін"
+    ],
+    "action_specs": {
+      "lookup_status": {
+        "operation": "lookup",
+        "collection": "loans"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "loan_early_repayment",
+    "name_ru": "Досрочное погашение",
+    "name_kk": "Мерзімінен бұрын өтеу",
+    "description": "Полное или частичное погашение кредита раньше графика",
+    "include_when": [
+      "Полное или частичное погашение кредита раньше графика"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: loan_monthly_payment,loan_overdue"
+    ],
+    "neighbor_scenarios": [
+      "loan_monthly_payment",
+      "loan_overdue"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "request_early_repayment"
+    ],
+    "requires_confirmation_actions": [
+      "request_early_repayment"
+    ],
+    "examples_ru": [
+      "Хочу досрочно закрыть кредит"
+    ],
+    "examples_kk": [
+      "Несиені мерзімінен бұрын жапқым келеді"
+    ],
+    "examples_mixed": [
+      "Кредитімді досрочно жабу керек"
+    ],
+    "action_specs": {
+      "request_early_repayment": {
+        "operation": "update",
+        "collection": "loans",
+        "value": "repayment_requested"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "loan_overdue",
+    "name_ru": "Просрочка кредита",
+    "name_kk": "Несие мерзімін өткізу",
+    "description": "Пропущенный платёж, уже возникшая просроченная задолженность",
+    "include_when": [
+      "Пропущенный платёж, уже возникшая просроченная задолженность"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: loan_monthly_payment,loan_early_repayment"
+    ],
+    "neighbor_scenarios": [
+      "loan_monthly_payment",
+      "loan_early_repayment"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "lookup_status"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Я просрочил платёж по кредиту"
+    ],
+    "examples_kk": [
+      "Несие төлемін кешіктірдім"
+    ],
+    "examples_mixed": [
+      "Кредит бойынша просрочка бар"
+    ],
+    "action_specs": {
+      "lookup_status": {
+        "operation": "lookup",
+        "collection": "loans"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "loan_refinancing",
+    "name_ru": "Рефинансирование",
+    "name_kk": "Қайта қаржыландыру",
+    "description": "Замена существующего кредита новым или объединение кредитов",
+    "include_when": [
+      "Замена существующего кредита новым или объединение кредитов"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: online_cash_loan,loan_early_repayment"
+    ],
+    "neighbor_scenarios": [
+      "online_cash_loan",
+      "loan_early_repayment"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Хочу рефинансировать кредит"
+    ],
+    "examples_kk": [
+      "Несиені қайта қаржыландырғым келеді"
+    ],
+    "examples_mixed": [
+      "Кредитті рефинансирование жасау керек"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "digital_mortgage",
+    "name_ru": "Ипотека",
+    "name_kk": "Ипотека",
+    "description": "Кредит на приобретение жилья, цифровая ипотека",
+    "include_when": [
+      "Кредит на приобретение жилья, цифровая ипотека"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: online_cash_loan,auto_loan"
+    ],
+    "neighbor_scenarios": [
+      "online_cash_loan",
+      "auto_loan"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Как оформить ипотеку?"
+    ],
+    "examples_kk": [
+      "Ипотеканы қалай рәсімдеймін?"
+    ],
+    "examples_mixed": [
+      "Пәтерге ипотека оформить керек"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "auto_loan",
+    "name_ru": "Автокредит",
+    "name_kk": "Автонесие",
+    "description": "Кредит на покупку автомобиля",
+    "include_when": [
+      "Кредит на покупку автомобиля"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: online_cash_loan,digital_mortgage"
+    ],
+    "neighbor_scenarios": [
+      "online_cash_loan",
+      "digital_mortgage"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Как получить автокредит?"
+    ],
+    "examples_kk": [
+      "Автонесиені қалай аламын?"
+    ],
+    "examples_mixed": [
+      "Машинаға автокредит керек"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "installment_market",
+    "name_ru": "Рассрочка и Market",
+    "name_kk": "Бөліп төлеу және Market",
+    "description": "Рассрочка на товары, Halyk Market, товарное финансирование",
+    "include_when": [
+      "Рассрочка на товары, Halyk Market, товарное финансирование"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: online_cash_loan,service_payment"
+    ],
+    "neighbor_scenarios": [
+      "online_cash_loan",
+      "service_payment"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Как купить телефон в рассрочку?"
+    ],
+    "examples_kk": [
+      "Телефонды бөліп төлеуге қалай аламын?"
+    ],
+    "examples_mixed": [
+      "Телефонды в рассрочку алғым келеді"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "deposit_open",
+    "name_ru": "Открытие депозита",
+    "name_kk": "Депозит ашу",
+    "description": "Создание нового депозитного счёта",
+    "include_when": [
+      "Создание нового депозитного счёта"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: deposit_topup,deposit_close"
+    ],
+    "neighbor_scenarios": [
+      "deposit_topup",
+      "deposit_close"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Хочу открыть депозит"
+    ],
+    "examples_kk": [
+      "Депозит ашқым келеді"
+    ],
+    "examples_mixed": [
+      "Жаңа депозит открыть керек"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "deposit_topup",
+    "name_ru": "Пополнение депозита",
+    "name_kk": "Депозитті толықтыру",
+    "description": "Внесение дополнительных денег на существующий депозит",
+    "include_when": [
+      "Внесение дополнительных денег на существующий депозит"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: deposit_open,transfer_between_own_accounts"
+    ],
+    "neighbor_scenarios": [
+      "deposit_open",
+      "transfer_between_own_accounts"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "request_topup"
+    ],
+    "requires_confirmation_actions": [
+      "request_topup"
+    ],
+    "examples_ru": [
+      "Как пополнить мой депозит?"
+    ],
+    "examples_kk": [
+      "Депозитімді қалай толықтырамын?"
+    ],
+    "examples_mixed": [
+      "Депозитімді пополнить керек"
+    ],
+    "action_specs": {
+      "request_topup": {
+        "operation": "update",
+        "collection": "deposits",
+        "value": "topup_requested"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "deposit_withdrawal",
+    "name_ru": "Частичное снятие",
+    "name_kk": "Ішінара алу",
+    "description": "Частичный вывод денег с депозита с сохранением вклада",
+    "include_when": [
+      "Частичный вывод денег с депозита с сохранением вклада"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: deposit_close,deposit_topup"
+    ],
+    "neighbor_scenarios": [
+      "deposit_close",
+      "deposit_topup"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "request_withdrawal"
+    ],
+    "requires_confirmation_actions": [
+      "request_withdrawal"
+    ],
+    "examples_ru": [
+      "Хочу снять часть денег с депозита"
+    ],
+    "examples_kk": [
+      "Депозиттен ақшаның бір бөлігін алғым келеді"
+    ],
+    "examples_mixed": [
+      "Депозиттен часть ақшаны алу керек"
+    ],
+    "action_specs": {
+      "request_withdrawal": {
+        "operation": "update",
+        "collection": "deposits",
+        "value": "withdrawal_requested"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "deposit_close",
+    "name_ru": "Закрытие депозита",
+    "name_kk": "Депозитті жабу",
+    "description": "Полное закрытие вклада и расторжение депозитного договора",
+    "include_when": [
+      "Полное закрытие вклада и расторжение депозитного договора"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: deposit_withdrawal,deposit_open"
+    ],
+    "neighbor_scenarios": [
+      "deposit_withdrawal",
+      "deposit_open"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "close_deposit"
+    ],
+    "requires_confirmation_actions": [
+      "close_deposit"
+    ],
+    "examples_ru": [
+      "Закройте мой депозит полностью"
+    ],
+    "examples_kk": [
+      "Депозитімді толық жабыңыз"
+    ],
+    "examples_mixed": [
+      "Депозитімді полностью закрыть керек"
+    ],
+    "action_specs": {
+      "close_deposit": {
+        "operation": "update",
+        "collection": "deposits",
+        "value": "closed"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "app_registration",
+    "name_ru": "Регистрация в приложении",
+    "name_kk": "Қосымшада тіркелу",
+    "description": "Первичная регистрация нового пользователя; не восстановление существующего аккаунта",
+    "include_when": [
+      "Первичная регистрация нового пользователя; не восстановление существующего аккаунта"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: app_access_recovery,trusted_device_change"
+    ],
+    "neighbor_scenarios": [
+      "app_access_recovery",
+      "trusted_device_change"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Как впервые зарегистрироваться в приложении?"
+    ],
+    "examples_kk": [
+      "Қосымшада алғаш рет қалай тіркелемін?"
+    ],
+    "examples_mixed": [
+      "Мен новый пользователь, тіркелу керек"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "app_access_recovery",
+    "name_ru": "Восстановление доступа",
+    "name_kk": "Қолжетімділікті қалпына келтіру",
+    "description": "Вход в существующий аккаунт, забытый пароль или код; не PIN карты",
+    "include_when": [
+      "Вход в существующий аккаунт, забытый пароль или код; не PIN карты"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: app_registration,card_pin,trusted_device_change"
+    ],
+    "neighbor_scenarios": [
+      "app_registration",
+      "card_pin",
+      "trusted_device_change"
+    ],
+    "required_slots": [],
+    "allowed_actions": [
+      "provide_information"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Забыл пароль от приложения"
+    ],
+    "examples_kk": [
+      "Қосымшаның құпиясөзін ұмыттым"
+    ],
+    "examples_mixed": [
+      "Пароль приложения ұмыттым"
+    ],
+    "action_specs": {},
+    "handoff": false
+  },
+  {
+    "id": "trusted_device_change",
+    "name_ru": "Доверенное устройство",
+    "name_kk": "Сенімді құрылғы",
+    "description": "Смена или удаление доверенного устройства и связанные security-настройки",
+    "include_when": [
+      "Смена или удаление доверенного устройства и связанные security-настройки"
+    ],
+    "exclude_when": [
+      "Не выбирать, если смысл соответствует соседнему сценарию: app_access_recovery,app_registration"
+    ],
+    "neighbor_scenarios": [
+      "app_access_recovery",
+      "app_registration"
+    ],
+    "required_slots": [
+      {
+        "name": "client_id",
+        "label_ru": "синтетический client_id, например DEMO-10001",
+        "label_kk": "сынақ client_id, мысалы DEMO-10001",
+        "pattern": "DEMO-\\d{5}"
+      }
+    ],
+    "allowed_actions": [
+      "provide_information",
+      "change_trusted_device"
+    ],
+    "requires_confirmation_actions": [
+      "change_trusted_device"
+    ],
+    "examples_ru": [
+      "Как поменять доверенное устройство?"
+    ],
+    "examples_kk": [
+      "Сенімді құрылғыны қалай ауыстырамын?"
+    ],
+    "examples_mixed": [
+      "Доверенное устройство ауыстыру керек"
+    ],
+    "action_specs": {
+      "change_trusted_device": {
+        "operation": "update",
+        "collection": "devices",
+        "value": "change_requested"
+      }
+    },
+    "handoff": false
+  },
+  {
+    "id": "human_operator",
+    "name_ru": "Оператор",
+    "name_kk": "Оператор",
+    "description": "Явная просьба поговорить с человеком или безопасная передача неподдерживаемого вопроса",
+    "include_when": [
+      "Явная просьба поговорить с человеком или безопасная передача неподдерживаемого вопроса"
+    ],
+    "exclude_when": [],
+    "neighbor_scenarios": [],
+    "required_slots": [],
+    "allowed_actions": [
+      "handoff"
+    ],
+    "requires_confirmation_actions": [],
+    "examples_ru": [
+      "Соедините с оператором"
+    ],
+    "examples_kk": [
+      "Оператормен қосыңыз"
+    ],
+    "examples_mixed": [
+      "Маған живой оператор керек"
+    ],
+    "action_specs": {},
+    "handoff": true
+  }
+]

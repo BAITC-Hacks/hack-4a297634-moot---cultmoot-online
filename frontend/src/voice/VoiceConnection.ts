@@ -1,0 +1,40 @@
+export class VoiceConnection{
+  private socket?:WebSocket;private stream?:MediaStream;private context?:AudioContext;private source?:MediaStreamAudioSourceNode;private node?:AudioWorkletNode;
+  private highFrames=0;private lastBarge=0;
+  async start(onEvent:(event:any)=>void,onLevel:(level:number)=>void,onBarge:()=>void){
+    try{
+      this.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});
+      this.context=new AudioContext({sampleRate:24000});
+      if(this.context.sampleRate!==24000)throw new Error('24 kHz audio is not supported by this browser');
+      await this.context.audioWorklet.addModule('/pcm-worklet.js');
+      this.socket=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/api/voice`);this.socket.binaryType='arraybuffer';
+      await new Promise<void>((resolve,reject)=>{
+        const timeout=window.setTimeout(()=>reject(new Error('Voice connection timed out')),20000);
+        this.socket!.onopen=()=>{window.clearTimeout(timeout);resolve();};
+        this.socket!.onerror=()=>{window.clearTimeout(timeout);reject(new Error('Voice connection failed'));};
+      });
+      this.socket.onmessage=e=>{try{onEvent(JSON.parse(e.data));}catch{onEvent({type:'error',message:'Invalid voice event'});}};
+      this.socket.onclose=()=>{this.stop();onEvent({type:'closed'});};
+      this.source=this.context.createMediaStreamSource(this.stream);
+      this.node=new AudioWorkletNode(this.context,'pcm-capture');
+      this.node.port.onmessage=({data})=>{
+        onLevel(Math.min(1,data.rms*12));
+        this.highFrames=data.rms>.018?this.highFrames+1:0;
+        if(this.highFrames===2 && performance.now()-this.lastBarge>700){this.lastBarge=performance.now();onBarge();}
+        if(this.socket?.readyState===WebSocket.OPEN){
+          if(this.socket.bufferedAmount>240000){this.stop();onEvent({type:'error',message:'Network cannot keep up with audio'});return;}
+          this.socket.send(data.buffer);
+        }
+      };
+      this.source.connect(this.node);
+      // A zero-gain sink keeps the worklet running without playing microphone audio back.
+      const mute=this.context.createGain();mute.gain.value=0;this.node.connect(mute);mute.connect(this.context.destination);
+      await this.context.resume();
+    }catch(error){this.stop();throw error;}
+  }
+  stop(){
+    if(this.socket){this.socket.onclose=null;this.socket.close();this.socket=undefined;}
+    this.node?.disconnect();this.source?.disconnect();this.stream?.getTracks().forEach(t=>t.stop());
+    this.context?.close();this.context=undefined;
+  }
+}
