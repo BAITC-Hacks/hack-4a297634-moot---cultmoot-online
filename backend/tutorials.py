@@ -25,9 +25,9 @@ ENGLISH={
   ('Text and history','You can type a question below. Your conversations are saved in History, where you can delete them.','History')])}
 
 def language(text,previous='ru'):
-    if re.search(r'\b(yes|no|where|how|hello|hi|thanks|next|back|show|close|stop)\b',text.lower()):return 'other'
     if re.search('[әғқңөұүһі]',text.lower()) or re.search(r'\b(сәлем|рахмет|иә|жоқ|калай|кайда|аудару)\b',text.lower()):return 'kk'
-    if re.search(r'\b(да|нет|где|как|привет|покажи|дальше|назад|спасибо)\b',text.lower()):return 'ru'
+    if re.search('[а-яё]',text.lower()):return 'ru'
+    if re.search('[a-z]',text.lower()):return 'other'
     return previous if previous in {'ru','kk','other'} else 'ru'
 
 def view(state):
@@ -37,13 +37,13 @@ def view(state):
         title,steps=ENGLISH[key]
         return {'id':key,'title':title,'language':'en','index':state.tutorial_step,'source':SOURCE if key=='transfer' else None,
           'steps':[{'title':s[0],'text':s[1],'target':s[2]} for s in steps]}
-    lang=state.language; k=1 if lang=='kk' else 0; g=GUIDES[key]
+    lang='kk' if state.language=='kk' else 'ru'; k=1 if lang=='kk' else 0; g=GUIDES[key]
     return {'id':key,'title':g[lang],'language':lang,'index':state.tutorial_step,'source':SOURCE if key=='transfer' else None,
       'steps':[{'title':s[k],'text':s[2+k],'target':s[4+k]} for s in g['steps']]}
 
 def handle(text,state):
     low=text.lower().strip(' .!?');state.language=language(text,state.language);kk=state.language=='kk';en=state.language=='other'
-    yes=bool(re.fullmatch(r'(да|давай|покажи|покажите|да покажи|да помоги|хорошо|иә|ия|көрсет|жарайды|yes)',low))
+    yes=bool(re.fullmatch(r'(да|давай|покажи|покажите|да покажи|да помоги|хорошо|иә|ия|көрсет|жарайды|yes)(?:[, ]+(?:пожалуйста|please|конечно|көрсет))?',low))
     no=low in {'нет','не надо','жоқ','no','закрыть','стоп','тоқта','close','stop'}
     if state.tutorial_active:
         if no:
@@ -59,7 +59,8 @@ def handle(text,state):
         state.tutorial_active=key;state.tutorial_step=0
         return view(state)['steps'][0]['text']
     help_intent=re.search(r'где|куда|как (найти|открыть|сделать|перевести|пользоваться)|не (могу|наш[её]л|понимаю)|нажать|покажи|қайда|қалай|таба алма|көрсет|where|how do|show me|cannot find|can.t find',low)
-    if help_intent:
+    supported=re.search(r'перев|аудар|получател|transfer|помощник|микрофон|assistant|microphone|көмекші|микрофон|этим сайтом|this (?:site|app)',low)
+    if help_intent and supported:
         key='transfer' if re.search(r'перев|аудар|получател|transfer',low) else 'navigation'
         state.tutorial_pending=key;state.tutorial_active=None
         return 'Would you like me to show you where to tap, step by step?' if en else 'Қай жерді басу керегін қадамдап көрсетейін бе?' if kk else 'Давайте помогу разобраться. Показать на экране, куда нажимать, шаг за шагом?'

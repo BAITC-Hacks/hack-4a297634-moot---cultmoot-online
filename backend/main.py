@@ -9,6 +9,7 @@ import re
 from collections import deque
 from contextlib import asynccontextmanager
 from uuid import UUID,uuid4
+from typing import Literal
 import httpx
 from fastapi import FastAPI,Request,Response,HTTPException,WebSocket
 from fastapi.responses import FileResponse,StreamingResponse,JSONResponse
@@ -22,6 +23,7 @@ from .router.state import SessionStore
 from .router.engine import Engine,normalize
 from .services.mock_backend import MockBackend
 from .services.knowledge import Knowledge
+from .services import assistant
 from .security.headers import SecurityMiddleware
 from .security.rate_limit import RateLimiter
 from .security.redaction import log_event,session_hash,redact
@@ -204,6 +206,18 @@ async def run_turn(state,text,request_id,stt_ms=0):
         quick=tutorials.handle(text,state)
         if quick is not None:return simple_result(state,text,quick,request_id,started)
         if route_slots.locked():raise HTTPException(429,'Помощник занят. Повторите через несколько секунд.')
+        if settings.mode=='assistant':
+            async with route_slots:
+                response,details,provider=await assistant.respond(http,settings,text,state)
+            result=simple_result(state,text,response,request_id,started)
+            result['backend']=details
+            trace=result['trace'];trace.update(decision='assist',action='provide_information',provider=provider,
+                scenario_name=None,reason_short='Ответ помощника без банковских операций',attempts=int(provider=='openai_assistant'))
+            elapsed=round((time.perf_counter()-started)*1000,2)
+            trace['latency'].update(router_ms=elapsed,stt_ms=round(stt_ms,2),total_ms=elapsed+stt_ms)
+            state.audio_responses[request_id]['started']=started-stt_ms/1000
+            samples.append({'router':elapsed,'error':False})
+            return result
         async with route_slots:d,audit=await engine.decide(text,state)
         router_ms=(time.perf_counter()-t)*1000;t=time.perf_counter()
         # engine.decide includes strict validation; capture final catalog validation independently.
@@ -240,7 +254,7 @@ def simple_result(state,text,response,request_id,started=None):
       'scenario_id':None,'scenario_name':'Пошаговая помощь','confidence':1,'reason_short':'Проверенная интерактивная подсказка',
       'alternatives':[],'topic_changed':False,'action':'guide','provider':'local','latency':{'router_ms':0,'total_ms':0},
       'validation_errors':[],'attempts':0,'requires_confirmation':False}
-    result={'response':response,'trace':trace,'state':state.context(),'backend':None,'audio_url':'/api/audio/'+request_id,
+    result={'response':response,'trace':trace,'state':state.context(),'backend':None,'audio_url':'/api/audio/'+request_id if settings.openai_key else None,
       'tutorial':tutorials.view(state),'tutorial_offer':bool(state.tutorial_pending)}
     state.add_turn(text,response);accounts.save(state.user_id,state.session_id,redact(text),redact(response))
     state.audio_responses[request_id]={'text':response,'created':time.time(),'started':started,'plays':0,'trace':trace}
@@ -275,18 +289,25 @@ async def route_turn(body:Turn,request:Request):
     return await run_turn(session(request),body.text,str(body.request_id))
 
 @app.get('/api/audio/{request_id}')
-async def audio(request_id:UUID,request:Request):
+async def audio(request_id:UUID,request:Request,format:Literal['mp3','pcm']='mp3'):
     s=session(request,False);limited(s,'tts',40)
     entry=s.audio_responses.get(str(request_id))
     if not entry or time.time()-entry['created']>180 or entry['plays']>=5:raise HTTPException(404,'Audio expired')
-    entry['plays']+=1;t=time.perf_counter()
-    if entry.get('cached_audio'):return Response(entry['cached_audio'],media_type='audio/mpeg')
+    media_type='audio/pcm' if format=='pcm' else 'audio/mpeg'
+    if entry.get('cached_audio') and entry.get('cached_format')==format:
+        entry['plays']+=1
+        return Response(entry['cached_audio'],media_type=media_type)
     if entry.get('generating') or audio_slots.locked():raise HTTPException(429,'Озвучивание занято. Попробуйте ещё раз.')
+    if not settings.openai_key:raise HTTPException(503,'Озвучивание не настроено.')
+    entry['plays']+=1;t=time.perf_counter()
     await audio_slots.acquire();entry['generating']=True
     try:
         upstream=await http.send(http.build_request('POST','https://api.openai.com/v1/audio/speech',
       headers={'Authorization':'Bearer '+settings.openai_key},json={'model':settings.tts_model,'voice':settings.voice,
-       'input':entry['text'],'response_format':'mp3','instructions':'You are a friendly female assistant speaking naturally to one person. Warm, relaxed, reassuring, expressive conversational intonation, gentle smile, short natural pauses. Never sound like a robot, announcer or scripted call center. Speak clearly at a comfortable, slightly brisk pace. Preserve the language of the text, Russian or Kazakh, with natural pronunciation. Do not add words.'},timeout=8),stream=True)
+       'input':entry['text'],'response_format':format,'instructions':'A warm, natural female voice having a relaxed one-to-one conversation. A gentle smile, expressive but subtle intonation, clear consonants, connected phrases and short natural pauses. Comfortable, slightly brisk pace. No announcer cadence, no exaggerated emotion or robotic word-by-word reading. Speak the exact text in its original Russian, Kazakh or English language. Do not add words.'},timeout=httpx.Timeout(12,connect=5)),stream=True)
+    except httpx.HTTPError:
+        audio_slots.release();entry['generating']=False
+        raise HTTPException(502,'Озвучивание недоступно; текстовый ответ сохранён.') from None
     except BaseException:
         audio_slots.release();entry['generating']=False
         raise
@@ -296,13 +317,15 @@ async def audio(request_id:UUID,request:Request):
     async def generate():
         first=True;chunks=bytearray();complete=False
         try:
-            async for chunk in upstream.aiter_bytes():
-                if first:
-                    entry['trace']['latency']['first_audio_ms']=round((time.perf_counter()-entry['started'])*1000,2);first=False
-                yield chunk
-                if chunks is not None:
-                    if len(chunks)+len(chunk)<=524288:chunks.extend(chunk)
-                    else:chunks=None
+            async with asyncio.timeout(40):
+                async for chunk in upstream.aiter_bytes():
+                    if not chunk:continue
+                    if first:
+                        entry['trace']['latency']['first_audio_ms']=round((time.perf_counter()-entry['started'])*1000,2);first=False
+                    yield chunk
+                    if chunks is not None:
+                        if len(chunks)+len(chunk)<=1048576:chunks.extend(chunk)
+                        else:chunks=None
             complete=True
         finally:
             await upstream.aclose()
@@ -310,9 +333,10 @@ async def audio(request_id:UUID,request:Request):
             if complete and chunks:
                 for old in s.audio_responses.values():old.pop('cached_audio',None)
                 entry['cached_audio']=bytes(chunks)
+                entry['cached_format']=format
             entry['trace']['latency']['tts_ms']=round((time.perf_counter()-t)*1000,2)
             entry['trace']['latency']['total_ms']=round((time.perf_counter()-entry['started'])*1000,2)
-    return StreamingResponse(generate(),media_type='audio/mpeg')
+    return StreamingResponse(generate(),media_type=media_type,headers={'X-Accel-Buffering':'no'})
 
 @app.get('/api/trace/{request_id}')
 async def trace(request_id:UUID,request:Request):
@@ -331,9 +355,12 @@ async def voice(ws:WebSocket):
     u=accounts.user(ws.cookies.get('vr_auth'))
     if not s or not u or s.user_id!=u['id'] or s.voice_active:await ws.close(code=1008);return
     if sum(x.voice_active for x in store.sessions.values())>=settings.max_voice:await ws.close(code=1013);return
-    retry=rates.check((s.session_id,'voice_connect'),5)
+    retry=rates.check((s.user_id,'voice_connect'),5)
     if retry:await ws.close(code=1013);return
-    await proxy_voice(ws,s,settings,lambda text,stt:run_turn(s,text,str(uuid4()),stt),lambda:bool(accounts.user(ws.cookies.get('vr_auth')) and store.get(s.session_id)))
+    s.voice_active=True
+    try:
+        await proxy_voice(ws,s,settings,lambda text,stt:run_turn(s,text,str(uuid4()),stt),lambda:bool(accounts.user(ws.cookies.get('vr_auth')) and store.get(s.session_id)))
+    finally:s.voice_active=False
 
 dist=ROOT/'frontend/dist'
 if dist.exists():
