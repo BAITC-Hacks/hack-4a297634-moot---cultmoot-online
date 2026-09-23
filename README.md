@@ -8,11 +8,11 @@ These are latency reductions, not a zero-latency guarantee. OpenAI availability,
 
 ## Run locally on Windows
 
-Requires Python 3.11+ and Node.js 22+. Quick setup: run `./setup.ps1`, put your own OpenAI key in the newly created `.env`, then run `./start.ps1`. Setup preserves an existing `.env`. GitHub contains no working API key: every independently hosted copy needs its own server-side key and API billing.
+Requires Python 3.11+ and Node.js 22+. Quick setup: run `./setup.ps1`, verify the local `.env`, then run `./start.ps1`. Setup preserves an existing `.env`. By the owner's explicit request, this private test repository includes a configured `.env`. Anyone with repository access can use its API key and incur charges. Keep access restricted and configure a separate server-side key for each deployment.
 
 1. Create a Python virtual environment: `python -m venv .venv`.
 2. Install dependencies: `.venv/Scripts/python.exe -m pip install -r requirements.txt`.
-3. Copy `.env.example` to `.env` and fill in `OPENAI_API_KEY` locally.
+3. Use the supplied `.env`, or copy `.env.example` to `.env` and fill in your own `OPENAI_API_KEY` locally.
 4. In `frontend`, run `npm ci` and `npm run build`.
 5. Run `./start.ps1`, then open http://localhost:8010 and create an account.
 
@@ -22,7 +22,7 @@ Requires Python 3.11+ and Node.js 22+. Quick setup: run `./setup.ps1`, put your 
 
 Email/password accounts are stored in SQLite. Passwords are salted scrypt hashes. Conversation text is encrypted with a server-local Fernet key. Users can delete history, change their password and revoke all login sessions. Email address ownership is not verified; Gmail OAuth and password-reset email delivery are not configured.
 
-Back up both `runtime/accounts.sqlite3` and `runtime/history.key` securely. Never publish `.env`, runtime files or backups. A production operator must restrict filesystem permissions and protect backups. See [SECURITY.md](SECURITY.md) for implemented controls and their limits.
+Back up both `runtime/accounts.sqlite3` and `runtime/history.key` securely. Restrict access to `.env`; never publish runtime files or backups. A production operator must restrict filesystem permissions and protect backups. See [SECURITY.md](SECURITY.md) for implemented controls and their limits.
 
 ## HTTPS deployment
 
