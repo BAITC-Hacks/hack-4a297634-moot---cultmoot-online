@@ -49,7 +49,7 @@ async def lifespan(app):
     yield
     task.cancel();await asyncio.gather(task,return_exceptions=True);await http.aclose()
 
-app=FastAPI(title='Voice Router — HackAlem',lifespan=lifespan,docs_url=None,redoc_url=None,openapi_url=None)
+app=FastAPI(title='Halyk Voice',lifespan=lifespan,docs_url=None,redoc_url=None,openapi_url=None)
 app.add_middleware(SecurityMiddleware,settings=settings)
 
 @app.exception_handler(RequestValidationError)
@@ -95,6 +95,33 @@ async def authenticate(action:str,body:Credentials,request:Request,response:Resp
 
 @app.get('/api/me')
 async def me(request:Request):return {'user':current_user(request)}
+
+class PasswordChange(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    current_password:str=Field(min_length=10,max_length=128)
+    new_password:str=Field(min_length=12,max_length=128)
+
+@app.post('/api/account/password')
+async def change_password(body:PasswordChange,request:Request,response:Response):
+    s=session(request);u=current_user(request);limited(s,'password',4)
+    if auth_slots.locked():raise HTTPException(429,'Повторите чуть позже.')
+    async with auth_slots:
+        verified=await asyncio.to_thread(accounts.login,u['email'],body.current_password)
+        if not verified:raise HTTPException(400,'Текущий пароль неверен.')
+        await asyncio.to_thread(accounts.change_password,u['id'],body.new_password)
+    for sid,state in list(store.sessions.items()):
+        if state.user_id==u['id']:store.delete(sid)
+    response.set_cookie('vr_auth',accounts.issue(u['id']),httponly=True,secure=settings.env=='production',samesite='strict',max_age=86400,path='/')
+    response.delete_cookie('vr_session')
+    return {'ok':True}
+
+@app.post('/api/account/logout-all')
+async def logout_all(request:Request,response:Response):
+    s=session(request);accounts.revoke_all(s.user_id)
+    for sid,state in list(store.sessions.items()):
+        if state.user_id==s.user_id:store.delete(sid)
+    response.delete_cookie('vr_auth');response.delete_cookie('vr_session')
+    return {'ok':True}
 
 @app.post('/api/logout')
 async def logout(request:Request,response:Response):
@@ -233,7 +260,7 @@ async def guide_action(body:GuideAction,request:Request):
     async with s.lock:
         if body.action=='accept':
             if not s.tutorial_pending:raise HTTPException(409,'Сначала попросите показать подсказку.')
-            answer=tutorials.handle('иә' if s.language=='kk' else 'да',s)
+            answer=tutorials.handle('иә' if s.language=='kk' else 'yes' if s.language=='other' else 'да',s)
         elif body.action=='close':
             s.tutorial_active=None;s.tutorial_pending=None
             return {'closed':True}

@@ -5,12 +5,12 @@ import time
 import websockets
 from fastapi import WebSocket
 
-def session_config(settings,language='auto'):
+def session_config(settings,language='auto',pause='auto'):
     audio={'format':{'type':'audio/pcm','rate':24000},
            'transcription':{'model':settings.realtime_model,'prompt':'Банковский разговор: русский, қазақша, mixed RU/KZ. Halyk, карта, несие, аударым, депозит.'},
            'noise_reduction':{'type':'near_field'},
-           'turn_detection':{'type':'server_vad','threshold':0.4,'prefix_padding_ms':300,'silence_duration_ms':450}}
-    if language in {'ru','kk'}:audio['transcription']['language']=language
+           'turn_detection':{'type':'server_vad','threshold':0.4,'prefix_padding_ms':300,'silence_duration_ms':5000 if pause=='5' else 450}}
+    if language in {'ru','kk','en'}:audio['transcription']['language']=language
     if settings.realtime_model=='gpt-live-transcribe':
         audio['turn_detection']=None
     return {'type':'transcription','audio':{'input':audio}}
@@ -26,7 +26,7 @@ async def proxy_voice(ws:WebSocket,state,settings,route_callback,authorized=lamb
         async with websockets.connect('wss://api.openai.com/v1/realtime?intent=transcription',
             additional_headers={'Authorization':'Bearer '+settings.openai_key},max_size=1024*1024,
             open_timeout=15,ping_interval=20) as upstream:
-            await upstream.send(json.dumps({'type':'session.update','session':session_config(settings,ws.query_params.get('language','auto'))}))
+            await upstream.send(json.dumps({'type':'session.update','session':session_config(settings,ws.query_params.get('language','auto'),ws.query_params.get('pause','auto'))}))
             start=time.monotonic(); audio_bytes=0; turn_start=None; last_auth=start
             finals=asyncio.Queue(maxsize=4)
             item_order=[]; completed={}; stopped={}; partials={}
@@ -67,6 +67,11 @@ async def proxy_voice(ws:WebSocket,state,settings,route_callback,authorized=lamb
                             current=item_order.pop(0); text=completed.pop(current)
                             await finals.put((text,stopped.pop(current,time.perf_counter())))
                     elif kind=='error' or kind=='conversation.item.input_audio_transcription.failed':
+                        if item in item_order:item_order.remove(item)
+                        partials.pop(item,None);completed.pop(item,None);stopped.pop(item,None)
+                        while item_order and item_order[0] in completed:
+                            current=item_order.pop(0)
+                            await finals.put((completed.pop(current),stopped.pop(current,time.perf_counter())))
                         await ws.send_json({'type':'error','message':'Не удалось точно распознать речь. Повторите, пожалуйста.'})
             async def process_turns():
                 while True:

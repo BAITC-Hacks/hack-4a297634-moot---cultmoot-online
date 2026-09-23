@@ -110,6 +110,15 @@ def user(token):
 def revoke(token):
     with connect() as c:c.execute('DELETE FROM logins WHERE token=?',(hashlib.sha256((token or '').encode()).hexdigest(),))
 
+def revoke_all(uid):
+    with connect() as c:c.execute('DELETE FROM logins WHERE user_id=?',(uid,))
+
+def change_password(uid,password):
+    hashed=password_hash(password)
+    with connect() as c:
+        c.execute('UPDATE users SET password=? WHERE id=?',(hashed,uid))
+        c.execute('DELETE FROM logins WHERE user_id=?',(uid,))
+
 def save(uid,conversation,text,response):
     with connect() as c:
         c.executemany('INSERT INTO messages(user_id,conversation,role,content,created) VALUES(?,?,?,?,?)',

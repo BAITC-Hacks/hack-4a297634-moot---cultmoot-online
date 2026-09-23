@@ -1,13 +1,14 @@
 export class VoiceConnection{
   private socket?:WebSocket;private stream?:MediaStream;private context?:AudioContext;private source?:MediaStreamAudioSourceNode;private node?:AudioWorkletNode;
-  private highFrames=0;private lastBarge=0;
-  async start(onEvent:(event:any)=>void,onLevel:(level:number)=>void,onBarge:()=>void,language='auto'){
+  private stopped=false;
+  async start(onEvent:(event:any)=>void,onLevel:(level:number)=>void,onBarge:()=>void,language='auto',pause='auto'){
     try{
       this.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});
+      if(this.stopped){this.stream.getTracks().forEach(t=>t.stop());return;}
       this.context=new AudioContext();
       await this.context.resume();
       await this.context.audioWorklet.addModule('/pcm-worklet.js');
-      this.socket=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/api/voice?language=${encodeURIComponent(language)}`);this.socket.binaryType='arraybuffer';
+      this.socket=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/api/voice?language=${encodeURIComponent(language)}&pause=${encodeURIComponent(pause)}`);this.socket.binaryType='arraybuffer';
       await new Promise<void>((resolve,reject)=>{
         const timeout=window.setTimeout(()=>reject(new Error('Voice connection timed out')),20000);
         this.socket!.onmessage=e=>{const event=JSON.parse(e.data);onEvent(event);if(event.type==='ready'){window.clearTimeout(timeout);resolve();}if(event.type==='error'){window.clearTimeout(timeout);reject(new Error(event.message));}};
@@ -33,6 +34,7 @@ export class VoiceConnection{
     }catch(error){this.stop();throw error;}
   }
   stop(){
+    this.stopped=true;
     if(this.socket){this.socket.onclose=null;this.socket.close();this.socket=undefined;}
     this.node?.disconnect();this.source?.disconnect();this.stream?.getTracks().forEach(t=>t.stop());
     this.context?.close();this.context=undefined;

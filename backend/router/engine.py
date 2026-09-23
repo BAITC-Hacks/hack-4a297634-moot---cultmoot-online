@@ -65,6 +65,13 @@ class Engine:
             reason='Router не смог вернуть проверяемое решение.'),audit
 
     def respond(self,text,d,state):
+        if self.settings.mode=='assistant':
+            from ..services.advice import answer
+            state.language=d.language;state.awaiting_confirmation=None;state.awaiting_slot=None
+            state.active_scenario=d.scenario_id
+            response,details=answer(text,self.catalog.by_id.get(d.scenario_id),d.language)
+            d.action='provide_information';d.requires_confirmation=False
+            return d,response,details
         lang='kk' if d.language=='kk' else 'ru'; state.language=d.language
         for pending in d.pending_scenario_ids:
             if pending not in state.pending_topics and pending!=d.scenario_id: state.pending_topics.append(pending)

@@ -10,7 +10,7 @@ load_dotenv(ROOT / '.env', override=False)
 @dataclass
 class Settings:
     env: str = field(default_factory=lambda: os.getenv('APP_ENV', '').strip() or 'development')
-    mode: str = field(default_factory=lambda: os.getenv('APP_MODE', 'demo'))
+    mode: str = field(default_factory=lambda: os.getenv('APP_MODE', 'assistant'))
     openai_key: str = field(default_factory=lambda: os.getenv('OPENAI_API_KEY', ''))
     openai_model: str = field(default_factory=lambda: os.getenv('OPENAI_ROUTER_MODEL', 'gpt-4.1'))
     realtime_model: str = field(default_factory=lambda: os.getenv('OPENAI_REALTIME_MODEL', 'gpt-4o-transcribe'))
@@ -31,7 +31,7 @@ class Settings:
         if self.env=='production' and any(urlsplit(o).scheme!='https' for o in self.origins):
             raise ValueError('Production requires HTTPS origins')
         if not 1<=self.router_deadline<=30:raise ValueError('Router deadline must be between 1 and 30 seconds')
-        if self.mode not in {'demo','official'}:
+        if self.mode not in {'demo','official','assistant'}:
             raise ValueError('Invalid APP_MODE')
         if '*' in self.origins:
             raise ValueError('Wildcard origins are forbidden')
